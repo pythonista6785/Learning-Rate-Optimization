@@ -96,8 +96,4 @@ class Layer(object):
             for i in range(ex.shape[0]):
                 denom = ex[i, :].sum()
                 ex[i, :] = ex[i, :]/denom
-            return x
-
-
-
-
+            return ex
