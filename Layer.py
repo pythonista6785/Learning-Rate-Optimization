@@ -4,7 +4,7 @@ from BatchNormMode import BatchNormMode
 
 class Layer(object):
     def __init__(self, numNeurons, numNeuronsPrevLayer, batchsize, lastLayer=False,
-                 dropout=0.2, activationType=ActivationType.SIGMOID):
+                 dropOut=0.2, activationType=ActivationType.SIGMOID):
         self.numNeurons = numNeurons
         self.batchsize = batchsize
         self.lastLayer = lastLayer

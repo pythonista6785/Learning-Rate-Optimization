@@ -65,6 +65,57 @@ class Network(object):
                         if (doBatchNorm == True):
                             self.Layers[lnum].dbeta = np.sum(self.Layers[lnum].delta,axis=0)
                             self.Layers[lnum].dgamma = np.sum(self.Layers[lnum].delta * self.Layers[lnum].Shat,axis=0)
-                            self.Layers[lnum].deltabn = (self.Layers[lnum].delta * 
-                                                         self.Layers[lnum].gamma)/(batchsize*np.sqrt(self.Layers)
+                            self.Layers[lnum].deltabn = (self.Layers[lnum].delta * self.Layers[lnum].gamma)/(batchsize*np.sqrt(self.Layers[lnum].sigma2+
+                                                           self.Layers[lnum].epsilon )) * (batchsize -1 - (self.Layers[lnum].Shat * self.Layers[lnum].Shat))
+                        if (lnum > 0):  #previous output 
+                            prevOut = self.Layers[lnum-1].a
+                        else:
+                            prevOut = X_train_mini
+
+                        if (dodoBatchNorm == True):
+                            self.Layers[lnum].WGrad = np.dot(self.Layers[lnum].deltabn.T,prevOut)
+                            self.Layers[lnum].bGrad = self.Layers[lnum].deltabn.sum(axis=0)
+                        else:
+                            self.Layers[lnum].WGrad = np.dot(self.Layers[lnum].delta.T,prevOut)
+                            self.Layers[lnum].bGrad = self.Layers[lnum].delta.sum(axis=0)
+                            lnum = lnum -1 
+                        itnum = itnum + 1
+                        self.UpdateGradsBiases(learningRate, lambda1, batchsize, LROptimization, itnum, doBatchNorm)
+                    print("Iter = " + str(j) + " Error = "+ str(error))
+
+    def UpdateGradsBiases(self, learningRate, lambda1, batchSize, LROptimization, itnum, doBatchNorm):
+        # update weights and biases for all layers
+        beta1 = 0.9
+        beta2 = 0.999
+        epsilon = 1e-8
+        for ln in range(len(self.numLayers)):
+            if (LROptimization == LROptimizerType.NONE):
+                self.Layers[ln].W = self.Layers[ln].W - learningRate * (1/batchSize) * self.Layers[ln].WGrad - learningRate * \
+                                    lambda1 * self.Layers[ln].W.sum()
+                self.Layers[ln].b = self.Layers[ln].b - learningRate * (1/batchSize) * self.Layers[ln].bGrad
+            elif (LROptimization == LROptimization.ADAM):
+                gtw = self.Layers[ln].WGrad  # weight gradients
+                gtb = self.Layers[ln].bGrad  # bias gradients 
+                self.Layers[ln].mtw = beta1 * self.Layers[ln].mtw + (1 - beta1) * gtw 
+                self.Layers[ln].mtb = beta1 * self.Layers[ln].mtb + (1 - beta1) * gtb 
+                self.Layers[ln].vtw = beta2 * self.Layers[ln].vtw + (1 - beta2) * gtw*gtw 
+                self.Layers[ln].vtb = beta2 * self.Layers[ln].vtb + (1 - beta2) * gtb*gtb 
+                mtwhat = self.Layers[ln].mtw/(1 - beta1**itnum)
+                mtbhat = self.Layers[ln].mtb/(1 - beta1**itnum)
+                vtwhat = self.Layers[ln].vtw/(1 - beta2**itnum)
+                vtbhat = self.Layers[ln].vtb/(1 - beta2**itnum)
+                self.Layers[ln].W = self.Layers[ln].W - learningRate * (1/batchSize) * mtwhat / ((vtwhat**0.5) + epsilon)
+            
+            if (doBatchNorm == True):
+                self.Layers[ln].beta = self.Layers[ln].beta - learningRate * self.Layers[ln].dbeta
+                self.Layers[ln].gamma = self.Layers[ln].gamma  - learningRate * self.Layers[ln].dgamma
+
+
+
+
+
+
+
+
+
  
